@@ -1,8 +1,13 @@
 # Learning Playwright with skyward thing, which will lead to DATA EATER!!!
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
+import pandas as pd
 import time
+import os
 
+PASSWORD_FILE = "password.txt"
+PASSWORD_DEFAULT = "Replace this text with your credentials"
+GRADE_FILE = "Grades.csv"
 
 password = ""
 username = ""
@@ -64,17 +69,31 @@ class GradeManager:
 
     def print_all_grades(self):
         print("***************************************************************************")
-        for classs, grades in zip(self.grades, self.grades.values()):
+        for classs, grades in zip(self.container, self.container.values()):
             print(f"Class-{classs}:")
             for i, grade in enumerate(grades):
                 print(f"    Grade #{i+1}: {grade}")
             print("***************************************************************************")
 
+    def save_grades(self):
+        df = pd.DataFrame(self.grades)
+        df.to_csv(GRADE_FILE, index=False)
+        print("Grades have been saved in the Grades.csv File")
+
+
+def check_files():
+    if not os.path.exists(PASSWORD_FILE):
+        open(PASSWORD_FILE, "x")
+        with open(PASSWORD_FILE, "w") as f:
+            f.write(PASSWORD_DEFAULT)
+    if not os.path.exists(GRADE_FILE):
+        open(GRADE_FILE, "x")
+
 
 def get_password():
-    with open("password.txt", "r") as f:
+    with open(PASSWORD_FILE, "r") as f:
         info = f.read()
-        if info == "Replace this text with your credentials":
+        if info == PASSWORD_DEFAULT:
             raise PasswordError("Error: Please input your credentials for Skyward to use this program")
         info = info.split("\n")
     return info[0], info[1]
@@ -100,13 +119,14 @@ def get_html(playwright):
 
 if __name__ == "__main__":
     
+    check_files()
     username, password = get_password()
     with sync_playwright() as playwright:
         print("Getting Html...")
         html = get_html(playwright)
         print("Html Has Been Attained")
     gm = GradeManager(html)
-    gm.get_single_grade()
     gm.get_classes()
     gm.get_all_grades()
     gm.print_all_grades()
+    gm.save_grades()
